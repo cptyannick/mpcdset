@@ -140,4 +140,6 @@ uv run pytest
 
 `scripts/bench_codecs.py` and `scripts/make_fixture.py` are standalone,
 PEP 723 scripts (`uv run scripts/bench_codecs.py [path]`), each declaring
-its own dependencies inline.
+its own dependencies inline. `scripts/build.sh` runs the test suite and
+builds an sdist + wheel into `dist/` (`uv build` under the hood; pass
+`--no-test` to skip the suite).
