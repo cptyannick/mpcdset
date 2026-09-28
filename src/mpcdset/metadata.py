@@ -37,20 +37,29 @@ class CodecSpec:
 def build_attrs(
     *,
     n_samples: int,
-    height: int,
-    width: int,
+    in_height: int,
+    in_width: int,
+    out_height: int,
+    out_width: int,
     in_channels: int,
     out_channels: int,
     dtype: Any,
     shard_size: int,
     user_metadata: dict | None = None,
 ) -> dict:
-    """Build the group attributes dict written at dataset creation time."""
+    """Build the group attributes dict written at dataset creation time.
+
+    ``input`` and ``target`` each have their own spatial size (``in_height``/
+    ``in_width`` vs. ``out_height``/``out_width``) -- a paired sample need
+    not have both fields on the same grid (e.g. one field sampled at a
+    different resolution than the other)."""
     return {
         "format_version": FORMAT_VERSION,
         "n_samples": n_samples,
-        "height": height,
-        "width": width,
+        "in_height": in_height,
+        "in_width": in_width,
+        "out_height": out_height,
+        "out_width": out_width,
         "in_channels": in_channels,
         "out_channels": out_channels,
         "dtype": str(np.dtype(dtype)),

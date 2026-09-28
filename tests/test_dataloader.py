@@ -10,7 +10,7 @@ from mpcdset.torch_dataset import PairedFieldDataset  # noqa: E402
 
 def _make_dataset(tmp_path, n=8, h=8, w=8, shard_size=4):
     path = tmp_path / "ds"
-    writer = DatasetWriter.create(path, n_samples=n, height=h, width=w, shard_size=shard_size)
+    writer = DatasetWriter.create(path, n_samples=n, in_height=h, in_width=w, shard_size=shard_size)
     rng = np.random.default_rng(1)
     inputs = rng.standard_normal((n, 1, h, w)).astype("float32")
     targets = rng.standard_normal((n, 3, h, w)).astype("float32")

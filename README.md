@@ -29,8 +29,10 @@ from mpcdset import DatasetWriter
 writer = DatasetWriter.create(
     "/path/to/dataset",
     n_samples=1000,
-    height=2048,
-    width=2048,
+    in_height=2048,
+    in_width=2048,
+    out_height=2048,        # defaults to in_height/in_width when omitted --
+    out_width=2048,         # pass explicitly if target is on a different grid
     dtype="float32",       # also supports float16, float64
     in_channels=1,          # default
     out_channels=3,          # default
@@ -38,13 +40,13 @@ writer = DatasetWriter.create(
 )
 
 for i in range(1000):
-    writer.write_sample(i, input_array, target_array)   # shapes (1, H, W), (3, H, W)
+    writer.write_sample(i, input_array, target_array)   # shapes (1, H_in, W_in), (3, H_out, W_out)
 
 writer.finalize()  # raises IncompleteDatasetError if any sample is missing
 ```
 
 `write_batch(start, input_batch, target_batch)` writes a contiguous batch
-at once (shapes `(B, C_in, H, W)` / `(B, C_out, H, W)`).
+at once (shapes `(B, C_in, H_in, W_in)` / `(B, C_out, H_out, W_out)`).
 
 ### Writing from several processes
 

@@ -34,22 +34,24 @@ FIXTURE_PATH = Path(__file__).parent.parent / "tests" / "fixtures" / "v1" / "dat
 
 
 def main() -> None:
-    n_samples, height, width = 3, 8, 8
+    n_samples, in_height, in_width, out_height, out_width = 3, 8, 8, 6, 6
     rng = np.random.default_rng(1234)
 
     writer = DatasetWriter.create(
         FIXTURE_PATH,
         n_samples=n_samples,
-        height=height,
-        width=width,
+        in_height=in_height,
+        in_width=in_width,
+        out_height=out_height,
+        out_width=out_width,
         dtype="float32",
         shard_size=2,
         user_metadata={"purpose": "committed test fixture, do not regenerate casually"},
         overwrite=True,
     )
     for i in range(n_samples):
-        input_arr = rng.standard_normal((writer.in_channels, height, width)).astype("float32")
-        target_arr = rng.standard_normal((writer.out_channels, height, width)).astype("float32")
+        input_arr = rng.standard_normal((writer.in_channels, in_height, in_width)).astype("float32")
+        target_arr = rng.standard_normal((writer.out_channels, out_height, out_width)).astype("float32")
         writer.write_sample(i, input_arr, target_arr)
     writer.finalize()
 

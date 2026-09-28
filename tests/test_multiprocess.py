@@ -11,7 +11,7 @@ from mpcdset.sharding import SampleRange, shard_aligned_ranges
 def _write_range(path: str, start: int, stop: int, seed: int) -> None:
     rng = np.random.default_rng(seed)
     writer = DatasetWriter.open(path, allowed_range=SampleRange(start, stop))
-    h, w = writer.height, writer.width
+    h, w = writer.in_height, writer.in_width
     for i in range(start, stop):
         input_arr = rng.standard_normal((writer.in_channels, h, w)).astype(writer.dtype)
         target_arr = rng.standard_normal((writer.out_channels, h, w)).astype(writer.dtype)
@@ -21,7 +21,7 @@ def _write_range(path: str, start: int, stop: int, seed: int) -> None:
 def test_multiprocess_disjoint_shard_aligned_writes(tmp_path):
     n, h, w, shard_size = 16, 8, 8, 4
     path = tmp_path / "ds"
-    DatasetWriter.create(path, n_samples=n, height=h, width=w, shard_size=shard_size)
+    DatasetWriter.create(path, n_samples=n, in_height=h, in_width=w, shard_size=shard_size)
 
     ranges = shard_aligned_ranges(n, shard_size, n_ranges=4)
     assert len(ranges) == 4
@@ -51,7 +51,7 @@ def test_multiprocess_disjoint_shard_aligned_writes(tmp_path):
 def test_verify_detects_missing_samples(tmp_path):
     n, h, w = 4, 8, 8
     path = tmp_path / "ds"
-    writer = DatasetWriter.create(path, n_samples=n, height=h, width=w, shard_size=2)
+    writer = DatasetWriter.create(path, n_samples=n, in_height=h, in_width=w, shard_size=2)
     writer.write_sample(
         0, np.zeros((1, h, w), dtype="float32"), np.zeros((3, h, w), dtype="float32")
     )
@@ -65,7 +65,7 @@ def test_verify_detects_missing_samples(tmp_path):
 def test_unaligned_allowed_range_rejected_at_open(tmp_path):
     n, h, w, shard_size = 16, 8, 8, 4
     path = tmp_path / "ds"
-    DatasetWriter.create(path, n_samples=n, height=h, width=w, shard_size=shard_size)
+    DatasetWriter.create(path, n_samples=n, in_height=h, in_width=w, shard_size=shard_size)
     with pytest.raises(ShardAlignmentError):
         DatasetWriter.open(path, allowed_range=SampleRange(1, 5))
 
@@ -73,7 +73,7 @@ def test_unaligned_allowed_range_rejected_at_open(tmp_path):
 def test_write_outside_allowed_range_rejected(tmp_path):
     n, h, w, shard_size = 16, 8, 8, 4
     path = tmp_path / "ds"
-    DatasetWriter.create(path, n_samples=n, height=h, width=w, shard_size=shard_size)
+    DatasetWriter.create(path, n_samples=n, in_height=h, in_width=w, shard_size=shard_size)
     writer = DatasetWriter.open(path, allowed_range=SampleRange(0, 4))
     with pytest.raises(RangeNotAllowedError):
         writer.write_sample(

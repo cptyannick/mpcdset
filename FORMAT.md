@@ -18,8 +18,10 @@ The group's `zarr.json` has an `attributes` object with these keys:
 |--------------------------|---------------|-----------------------------------------------------------------------|
 | `format_version`         | int           | always `1` for this document                                          |
 | `n_samples`               | int           | number of samples, `N`                                                |
-| `height`                  | int           | sample height, `H`                                                    |
-| `width`                   | int           | sample width, `W`                                                     |
+| `in_height`                | int           | input sample height, `H_in`                                           |
+| `in_width`                 | int           | input sample width, `W_in`                                            |
+| `out_height`               | int           | target sample height, `H_out` (may differ from `H_in`)                |
+| `out_width`                | int           | target sample width, `W_out` (may differ from `W_in`)                 |
 | `in_channels`             | int           | number of input channels, `C_in` (default 1)                          |
 | `out_channels`            | int           | number of target channels, `C_out` (default 3)                        |
 | `dtype`                   | string        | numpy dtype string for both arrays, e.g. `"float32"`, `"float16"`, `"float64"` |
@@ -35,12 +37,15 @@ A reader must not assume any key not listed here.
 
 Two arrays live directly under the group:
 
-- **`input`**: shape `(N, C_in, H, W)`, dtype as given by `dtype` above.
-- **`target`**: shape `(N, C_out, H, W)`, same dtype.
+- **`input`**: shape `(N, C_in, H_in, W_in)`, dtype as given by `dtype` above.
+- **`target`**: shape `(N, C_out, H_out, W_out)`, same dtype. `input` and
+  `target` are independently shaped -- a reader must not assume they share
+  a spatial size.
 
 Both use the Zarr v3 **sharding codec**:
 
-- Inner chunk shape: `(1, C, H, W)` -- exactly one sample per chunk.
+- Inner chunk shape: `(1, C, H, W)` -- exactly one sample per chunk (each
+  array using its own `C`/`H`/`W`).
 - Shard shape: `(shard_size, C, H, W)` -- `shard_size` samples per shard.
   The last shard along the sample axis is partial when `N` is not a
   multiple of `shard_size`; Zarr v3 sharding handles this natively.
@@ -51,10 +56,10 @@ Both use the Zarr v3 **sharding codec**:
   reader decodes it transparently. This is what makes the compression
   setting configurable at write time without touching this document.
 
-To read sample `i`: read `input[i]` and `target[i]` (either directly via
-zarr's indexing, or a shard-aware Zarr v3 client) and get back a `(C, H,
-W)` array of the stated dtype. Storage is lossless: decoded bytes are
-bit-identical to what was written.
+To read sample `i`: read `input[i]` (a `(C_in, H_in, W_in)` array) and
+`target[i]` (a `(C_out, H_out, W_out)` array), either directly via zarr's
+indexing or a shard-aware Zarr v3 client. Storage is lossless: decoded
+bytes are bit-identical to what was written.
 
 ### `_written` array (internal bookkeeping)
 

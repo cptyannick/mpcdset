@@ -25,13 +25,13 @@ def test_v1_fixture_is_still_readable():
 
     expected_input_shape = (
         reader.attrs["in_channels"],
-        reader.attrs["height"],
-        reader.attrs["width"],
+        reader.attrs["in_height"],
+        reader.attrs["in_width"],
     )
     expected_target_shape = (
         reader.attrs["out_channels"],
-        reader.attrs["height"],
-        reader.attrs["width"],
+        reader.attrs["out_height"],
+        reader.attrs["out_width"],
     )
     expected_dtype = np.dtype(reader.attrs["dtype"])
 

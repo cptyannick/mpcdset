@@ -63,8 +63,10 @@ class DatasetWriter:
         path: str | os.PathLike,
         *,
         n_samples: int,
-        height: int,
-        width: int,
+        in_height: int,
+        in_width: int,
+        out_height: int | None = None,
+        out_width: int | None = None,
         dtype: Any = "float32",
         in_channels: int = 1,
         out_channels: int = 3,
@@ -83,8 +85,13 @@ class DatasetWriter:
             path: directory to create the dataset in. Must not already
                 exist unless ``overwrite=True``.
             n_samples: total number of samples ``N``.
-            height: sample height ``H``.
-            width: sample width ``W``.
+            in_height: input sample height ``H_in``.
+            in_width: input sample width ``W_in``.
+            out_height: target sample height ``H_out``; defaults to
+                ``in_height`` (pass explicitly when the target field is on a
+                different-sized grid than the input).
+            out_width: target sample width ``W_out``; defaults to
+                ``in_width``.
             dtype: numpy dtype for both ``input`` and ``target`` (e.g.
                 ``"float32"``, ``"float16"``, ``"float64"``). Fixed for the
                 life of the dataset.
@@ -97,10 +104,15 @@ class DatasetWriter:
                 group attributes under ``"user_metadata"``.
             overwrite: if ``True``, remove ``path`` first if it exists.
         """
+        out_height = in_height if out_height is None else out_height
+        out_width = in_width if out_width is None else out_width
+
         if n_samples <= 0:
             raise ValueError(f"n_samples must be positive, got {n_samples}")
-        if height <= 0 or width <= 0:
-            raise ValueError(f"height and width must be positive, got {height}x{width}")
+        if in_height <= 0 or in_width <= 0:
+            raise ValueError(f"in_height and in_width must be positive, got {in_height}x{in_width}")
+        if out_height <= 0 or out_width <= 0:
+            raise ValueError(f"out_height and out_width must be positive, got {out_height}x{out_width}")
         if in_channels <= 0 or out_channels <= 0:
             raise ValueError("in_channels and out_channels must be positive")
         if shard_size <= 0:
@@ -122,17 +134,17 @@ class DatasetWriter:
         blosc = _blosc_codec(codec)
         group.create_array(
             name=_INPUT_ARRAY_NAME,
-            shape=(n_samples, in_channels, height, width),
-            chunks=(1, in_channels, height, width),
-            shards=(shard_size, in_channels, height, width),
+            shape=(n_samples, in_channels, in_height, in_width),
+            chunks=(1, in_channels, in_height, in_width),
+            shards=(shard_size, in_channels, in_height, in_width),
             dtype=dtype,
             compressors=[blosc],
         )
         group.create_array(
             name=_TARGET_ARRAY_NAME,
-            shape=(n_samples, out_channels, height, width),
-            chunks=(1, out_channels, height, width),
-            shards=(shard_size, out_channels, height, width),
+            shape=(n_samples, out_channels, out_height, out_width),
+            chunks=(1, out_channels, out_height, out_width),
+            shards=(shard_size, out_channels, out_height, out_width),
             dtype=dtype,
             compressors=[blosc],
         )
@@ -146,8 +158,10 @@ class DatasetWriter:
 
         attrs = build_attrs(
             n_samples=n_samples,
-            height=height,
-            width=width,
+            in_height=in_height,
+            in_width=in_width,
+            out_height=out_height,
+            out_width=out_width,
             in_channels=in_channels,
             out_channels=out_channels,
             dtype=dtype,
@@ -228,12 +242,20 @@ class DatasetWriter:
         return int(self._attrs["out_channels"])
 
     @property
-    def height(self) -> int:
-        return int(self._attrs["height"])
+    def in_height(self) -> int:
+        return int(self._attrs["in_height"])
 
     @property
-    def width(self) -> int:
-        return int(self._attrs["width"])
+    def in_width(self) -> int:
+        return int(self._attrs["in_width"])
+
+    @property
+    def out_height(self) -> int:
+        return int(self._attrs["out_height"])
+
+    @property
+    def out_width(self) -> int:
+        return int(self._attrs["out_width"])
 
     @property
     def allowed_range(self) -> SampleRange | None:
@@ -244,13 +266,13 @@ class DatasetWriter:
     def write_sample(self, index: int, input: np.ndarray, target: np.ndarray) -> None:
         """Write a single sample at ``index``.
 
-        ``input`` must have shape ``(in_channels, height, width)`` and
-        ``target`` ``(out_channels, height, width)``, both with this
+        ``input`` must have shape ``(in_channels, in_height, in_width)`` and
+        ``target`` ``(out_channels, out_height, out_width)``, both with this
         dataset's exact dtype (no implicit casting).
         """
         self._check_range_allowed(index, index + 1)
-        self._validate_array("input", input, (self.in_channels, self.height, self.width))
-        self._validate_array("target", target, (self.out_channels, self.height, self.width))
+        self._validate_array("input", input, (self.in_channels, self.in_height, self.in_width))
+        self._validate_array("target", target, (self.out_channels, self.out_height, self.out_width))
         self._input[index] = input
         self._target[index] = target
         self._written[index] = True
@@ -258,14 +280,14 @@ class DatasetWriter:
     def write_batch(self, start: int, input: np.ndarray, target: np.ndarray) -> None:
         """Write a contiguous batch of samples starting at ``start``.
 
-        ``input`` must have shape ``(batch, in_channels, height, width)``
-        and ``target`` ``(batch, out_channels, height, width)``.
+        ``input`` must have shape ``(batch, in_channels, in_height, in_width)``
+        and ``target`` ``(batch, out_channels, out_height, out_width)``.
         """
         batch = input.shape[0]
         stop = start + batch
         self._check_range_allowed(start, stop)
-        self._validate_array("input", input, (batch, self.in_channels, self.height, self.width))
-        self._validate_array("target", target, (batch, self.out_channels, self.height, self.width))
+        self._validate_array("input", input, (batch, self.in_channels, self.in_height, self.in_width))
+        self._validate_array("target", target, (batch, self.out_channels, self.out_height, self.out_width))
         self._input[start:stop] = input
         self._target[start:stop] = target
         self._written[start:stop] = True
