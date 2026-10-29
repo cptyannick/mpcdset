@@ -16,7 +16,7 @@ from mpcdset.errors import (
     ShardAlignmentError,
     UnsupportedFormatVersionError,
 )
-from mpcdset.metadata import FORMAT_VERSION, CodecSpec
+from mpcdset.metadata import FORMAT_VERSION, AugmentationSpec, CodecSpec
 from mpcdset.readers import DatasetReader, open_dataset, register_reader
 from mpcdset.resolver import DEFAULT_RESOLVER, LocalPathResolver, SourceResolver, resolve_source
 from mpcdset.sharding import SampleRange, is_shard_aligned, shard_aligned_ranges
@@ -25,6 +25,7 @@ from mpcdset.writer import DatasetWriter
 __version__ = "0.1.0"
 
 __all__ = [
+    "AugmentationSpec",
     "CodecSpec",
     "DEFAULT_RESOLVER",
     "DatasetReader",
