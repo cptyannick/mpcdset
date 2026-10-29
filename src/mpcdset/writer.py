@@ -23,7 +23,7 @@ from mpcdset.errors import (
     ShardAlignmentError,
     UnsupportedFormatVersionError,
 )
-from mpcdset.metadata import FORMAT_VERSION, CodecSpec, build_attrs
+from mpcdset.metadata import FORMAT_VERSION, AugmentationSpec, CodecSpec, build_attrs
 from mpcdset.sharding import SampleRange, is_shard_aligned
 
 _INPUT_ARRAY_NAME = "input"
@@ -73,6 +73,7 @@ class DatasetWriter:
         shard_size: int = 64,
         codec: CodecSpec | None = None,
         user_metadata: dict | None = None,
+        augmentation: AugmentationSpec | None = None,
         overwrite: bool = False,
     ) -> "DatasetWriter":
         """Create a new, empty dataset on disk and return a writer for it.
@@ -102,8 +103,14 @@ class DatasetWriter:
                 compression; defaults to Blosc/zstd with bitshuffle.
             user_metadata: optional free-form dict stored verbatim in the
                 group attributes under ``"user_metadata"``.
+            augmentation: optional :class:`mpcdset.AugmentationSpec` recording
+                an input-side augmentation baked into the samples; stored in
+                ``user_metadata["augmentation"]`` and exposed as
+                :attr:`DatasetReader.augmentation`.
             overwrite: if ``True``, remove ``path`` first if it exists.
         """
+        if augmentation is not None:
+            user_metadata = {**(user_metadata or {}), "augmentation": augmentation.to_dict()}
         out_height = in_height if out_height is None else out_height
         out_width = in_width if out_width is None else out_width
 

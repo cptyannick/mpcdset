@@ -34,6 +34,49 @@ class CodecSpec:
     shuffle: str = "bitshuffle"
 
 
+@dataclass(frozen=True)
+class AugmentationSpec:
+    """Provenance of an *input-side* augmentation baked into a dataset.
+
+    Stored under ``user_metadata["augmentation"]`` (purely additive, so no
+    ``format_version`` bump: readers that predate it just see an extra
+    ``user_metadata`` key). It documents that the samples are not raw draws
+    from the base recipe but were transformed -- e.g. a random rigid
+    shift/rotation of the input field, with the target re-derived -- so a
+    dataset of one augmentation is never mistaken for another.
+
+    ``shift_px``/``rot_deg`` are the max uniform ``+-`` ranges, ``taper_px`` the
+    cosine edge-taper width (all in input-grid pixels / degrees); ``kind`` names
+    the transform family and ``extra`` carries anything else the producer wants
+    to record.
+    """
+
+    kind: str = "rigid"
+    shift_px: float = 0.0
+    rot_deg: float = 0.0
+    taper_px: float = 0.0
+    extra: dict | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "kind": self.kind,
+            "shift_px": self.shift_px,
+            "rot_deg": self.rot_deg,
+            "taper_px": self.taper_px,
+            "extra": dict(self.extra or {}),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "AugmentationSpec":
+        return cls(
+            kind=d.get("kind", "rigid"),
+            shift_px=float(d.get("shift_px", 0.0)),
+            rot_deg=float(d.get("rot_deg", 0.0)),
+            taper_px=float(d.get("taper_px", 0.0)),
+            extra=dict(d.get("extra") or {}),
+        )
+
+
 def build_attrs(
     *,
     n_samples: int,
