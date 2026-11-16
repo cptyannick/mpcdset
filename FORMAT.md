@@ -84,3 +84,10 @@ a separate file).
   dataset forever, so a dataset written years ago stays readable.
 - Purely additive changes to `user_metadata` do not require a version
   bump, since `user_metadata` is free-form to begin with.
+
+### Well-known `user_metadata` keys
+
+- `augmentation` (optional): `{"kind": str, "shift_px": float, "rot_deg":
+  float, "taper_px": float, "extra": object}` -- provenance of an input-side
+  augmentation baked into the samples (see `mpcdset.AugmentationSpec`).
+  Absent for plain datasets.

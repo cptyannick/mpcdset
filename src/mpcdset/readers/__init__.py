@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from mpcdset.errors import UnsupportedFormatVersionError
+from mpcdset.metadata import AugmentationSpec
 
 
 class DatasetReader(abc.ABC):
@@ -32,6 +33,13 @@ class DatasetReader(abc.ABC):
     @abc.abstractmethod
     def attrs(self) -> dict:
         """The dataset's group attributes (metadata), as a plain dict."""
+
+    @property
+    def augmentation(self) -> AugmentationSpec | None:
+        """The input-side augmentation recorded at write time
+        (``user_metadata["augmentation"]``), or ``None`` for a plain dataset."""
+        raw = (self.attrs.get("user_metadata") or {}).get("augmentation")
+        return AugmentationSpec.from_dict(raw) if raw else None
 
 
 _REGISTRY: dict[int, type[DatasetReader]] = {}
